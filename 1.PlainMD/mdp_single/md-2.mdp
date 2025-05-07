@@ -1,0 +1,55 @@
+integrator          =  md
+tinit               =  0.0
+dt                  =  0.002     ; ps !
+nsteps              =  500000000 ; total 1000 ns.
+define              = 
+comm_mode           =  Linear
+nstcomm             =  100
+
+
+nstlist             =  10         ; Interval between steps that update the neighbor list.
+
+; OUTPUT CONTROL OPTIONS
+; Output frequency for coords (x), velocities (v) and forces (f)
+nstxout                  = 50000
+nstvout                  = 50000
+nstfout                  = 10000
+; Output frequency for energies to log file and energy file
+nstlog                   = 1000
+nstcalcenergy            = 1000
+nstenergy                = 1000
+; Output frequency and precision for .xtc file
+nstxout-compressed       = 1000
+compressed-x-precision   = 1000
+xtc_grps                 = RNA        ; group(s) to write to xtc trajectory
+
+coulombtype         =  pme
+rlist               =  1.1
+rcoulomb            =  1.1
+epsilon_r           =  1.0
+fourierspacing      =  0.1
+optimize_fft        =  yes
+
+vdwtype             =  shift
+rvdw                =  1.1 ; Van der Waals cut-off
+rvdw_switch         =  0.9
+
+; Temperature coupling is on in two groups
+Tcoupl              =  v-rescale
+tc-grps             =  system
+tau_t               =  0.1
+ref_t               =  300
+; Energy monitoring
+energygrps          =  system
+; Pressure coupling
+pcoupl              =  parrinello-rahman
+pcoupltype          =  isotropic
+tau_p               =  0.5
+compressibility     =  4.5e-5
+ref_p               =  1.0
+nstpcouple          = 1
+; Generate velocites is off
+gen_vel             =  no
+
+constraints         =  h-bonds
+;refcoord_scaling    =  com

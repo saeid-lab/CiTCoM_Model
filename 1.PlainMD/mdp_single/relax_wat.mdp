@@ -1,0 +1,51 @@
+integrator          =  md
+define              = -DPOSRES
+tinit               =  0.0
+dt                  =  0.002    ; ps !
+nsteps              =  40000    ; = 80 ps.
+
+comm_mode           =  Linear
+nstcomm             =  100
+
+nstxout             =  1000
+nstvout             =  1000
+nstfout             =  0
+nstxtcout           =  50
+xtc_precision       =  1000
+nstlog              =  100
+nstenergy           =  100
+nstlist             =  10
+
+coulombtype         =  pme
+rlist               =  1.1
+rcoulomb            =  1.1
+epsilon_r           =  1.0
+fourierspacing      =  0.1
+optimize_fft        =  yes
+
+vdwtype             =  shift
+rvdw                =  1.1 ; Van der Waals cut-off
+rvdw_switch         =  0.9
+
+; Temperature coupling is on in two groups
+Tcoupl              =  v-rescale
+tc-grps             =  system
+tau_t               =  0.1
+ref_t               =  300
+; Energy monitoring
+energygrps          =  system
+; Pressure coupling
+;pcoupl              =  parrinello-rahman
+pcoupl              =  berendsen
+pcoupltype          =  isotropic
+refcoord_scaling    =  all ; to be used when using -DPOSRES
+tau_p               =  0.5
+compressibility     =  4.5e-5
+ref_p               =  1.0
+; Generate velocites is on at 300 K.
+gen_vel             =  yes
+gen_temp            =  300.0
+gen_seed            =  -1
+
+constraints         =  h-bonds
+

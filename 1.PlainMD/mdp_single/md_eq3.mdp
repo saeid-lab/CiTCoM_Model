@@ -1,0 +1,47 @@
+integrator          =  md
+tinit               =  0.0
+dt                  =  0.002    ; ps !
+nsteps              =  500000   ; total 0.5 ns.
+define              = -DPOSRES500
+comm_mode           =  Linear
+nstcomm             =  100
+
+nstxout             =  10000
+nstvout             =  10000
+nstfout             =  0
+nstxtcout           =  500
+xtc_precision       =  1000
+nstlog              =  500
+nstenergy           =  500
+nstlist             =  10
+
+coulombtype         =  pme
+rlist               =  1.1
+rcoulomb            =  1.1
+epsilon_r           =  1.0
+fourierspacing      =  0.1
+optimize_fft        =  yes
+
+vdwtype             =  shift
+rvdw                =  1.1 ; Van der Waals cut-off
+rvdw_switch         =  0.9
+
+; Temperature coupling is on in two groups
+Tcoupl              =  v-rescale
+tc-grps             =  system
+tau_t               =  0.1
+ref_t               =  300
+; Energy monitoring
+energygrps          =  system
+; Pressure coupling
+pcoupl              =  berendsen
+pcoupltype          =  isotropic
+tau_p               =  0.5
+compressibility     =  4.5e-5
+ref_p               =  1.0
+nstpcouple          = 1
+; Generate velocites is off
+gen_vel             =  no
+
+constraints         =  h-bonds
+refcoord_scaling    =  com
