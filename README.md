@@ -18,3 +18,7 @@ Before starting, make sure you have the following softwares installed on your co
 2. Prepare and run Replica Exchange with Solute Scaling (REST2)
 3. Prepare and run Umbrella sampling
 
+
+
+## Useful commands:
+gmx_mpi trjcat -f md-2.1.part0001.xtc etc.xtc -o total.xtc

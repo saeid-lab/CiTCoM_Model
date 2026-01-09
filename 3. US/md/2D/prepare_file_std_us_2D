@@ -1,0 +1,337 @@
+#!/bin/bash
+
+############################################################
+###            SCRIPT FOR LAUNCH US                      ###
+###    You need : .gro of eq simulation                  ###
+###               us.sub (sub script for us)             ###
+###               index.ndx                              ###
+###    To launch :                                       ###
+###          Launch_steered.sh                           ###
+###          Launch_us.sh (with make_tpr_us.sh)          ###
+###                                                      ###
+###    Don't forget to change atom and values of loop    ###
+###            Last modify: S.E April 2025               ###
+############################################################
+
+for i in $(seq 0.20 0.01 0.80)  
+
+do
+  echo "Turn $i in the external loop"
+  mkdir -p $i 
+
+      for k in $(seq 0 0.174533 2.26893)
+          do 
+	  echo "Turn $k in the internal loop"
+          cd $i
+	  mkdir -p $k
+          cd $k
+	  
+####Refaire pour le calcul en enlevant le stride et le restraint.biais
+### et ensuite plumed_driver --mf_xtc .xtc --plumed plumedquejecree.dat
+
+cat > plumed_us.dat <<EOF    
+d1: DISTANCE ATOMS=2100,3852
+a1: ANGLE ATOMS=2098,2077,3852
+restraint: RESTRAINT ARG=d1,a1 AT=$i,$k KAPPA=450.0,450.0
+PRINT ARG=d1,a1,restraint.bias FILE=colvar_$i.$k.dat STRIDE=1000
+EOF
+
+cat > plumed_steered.dat <<FEO
+d1: DISTANCE ATOMS=2100,3852
+a1: ANGLE ATOMS=2098,2077,3852
+PRINT ARG=d1,a1 FILE=colvar.dat
+MOVINGRESTRAINT ...
+        ARG=d1
+        STEP0=0 AT0=1.4 KAPPA0=450.0
+        STEP1=20000 AT1=$i
+        STEP2=25000 AT2=$i
+...
+MOVINGRESTRAINT ...
+        ARG=d1,a1
+        STEP0=30000 AT0=$i,$k KAPPA0=1000,450.0
+        STEP1=40000 AT1=$i,$k
+        STEP2=50000 AT2=$i,$k
+...
+FEO
+
+cat > steered.mdp <<EFO
+integrator          =  md
+tinit               =  0.0
+dt                  =  0.002    ; ps !
+nsteps              =  55000   ; total 0.004 ns.
+define              = 
+
+comm_mode           =  Linear
+nstcomm             =  100
+
+nstxout             =  20000
+nstvout             =  20000
+nstfout             =  0
+nstxtcout           =  5000
+xtc_precision       =  1000
+nstlog              =  500
+nstenergy           =  500
+nstlist             =  10
+xtc-grps	    =  RNA_1M7
+
+coulombtype         =  pme
+rlist               =  1.1
+rcoulomb            =  1.1
+epsilon_r           =  1.0
+fourierspacing      =  0.1
+optimize_fft        =  yes
+
+vdwtype             =  shift
+rvdw                =  1.1 ; Van der Waals cut-off
+rvdw_switch         =  0.9
+
+; Temperature coupling is on in two groups
+Tcoupl              =  v-rescale
+tc-grps             =  system
+tau_t               =  0.1
+ref_t               =  300
+; Energy monitoring
+energygrps          =  system
+; Pressure coupling
+pcoupl              =  parrinello-rahman
+pcoupltype          =  isotropic
+tau_p               =  0.5
+compressibility     =  4.5e-5
+ref_p               =  1.0
+nstpcouple          = 1
+; Generate velocites is off
+gen_vel             =  no
+
+constraints         =  h-bonds
+;refcoord_scaling    =  com
+EFO
+
+cat > us.mdp <<OEF
+integrator          =  md
+tinit               =  0.0
+dt                  =  0.002    ; ps !
+nsteps              =  2500000   ; total 5 ns.
+define              = 
+
+comm_mode           =  Linear
+nstcomm             =  100
+
+nstxout             =  20000
+nstvout             =  20000
+nstfout             =  0
+nstxtcout           =  100
+xtc_precision       =  1000
+nstlog              =  500
+nstenergy           =  500
+nstlist             =  10
+xtc-grps	    =  RNA_1M7
+
+coulombtype         =  pme
+rlist               =  1.1
+rcoulomb            =  1.1
+epsilon_r           =  1.0
+fourierspacing      =  0.1
+optimize_fft        =  yes
+
+vdwtype             =  shift
+rvdw                =  1.1 ; Van der Waals cut-off
+rvdw_switch         =  0.9
+
+; Temperature coupling is on in two groups
+Tcoupl              =  v-rescale
+tc-grps             =  system
+tau_t               =  0.1
+ref_t               =  300
+; Energy monitoring
+energygrps          =  system
+; Pressure coupling
+pcoupl              =  parrinello-rahman
+pcoupltype          =  isotropic
+tau_p               =  0.5
+compressibility     =  4.5e-5
+ref_p               =  1.0
+nstpcouple          = 1
+; Generate velocites is off
+gen_vel             =  no
+
+constraints         =  h-bonds
+;refcoord_scaling    =  com
+OEF
+
+
+cat > steered.sub << ABC
+#!/bin/bash
+#SBATCH --account=ibc7585
+#SBATCH --job-name=std
+#SBATCH --constraint=MI250
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --gpus-per-node=1
+#SBATCH --hint=nomultithread
+#SBATCH --output=%A.out 
+#SBATCH --error=cines-%J.err
+#SBATCH --time=08:00:00
+
+
+module purge
+
+nodes="\${SLURM_JOB_NUM_NODES}"
+ppn="\${SLURM_NTASKS_PER_NODE}"
+threads="\${BM_THREADS:-\$SLURM_CPUS_PER_TASK}"
+smt=1
+#ranks=$(( nodes * ppn ))
+ranks="\${SLURM_NTASKS}"
+
+system=adastra
+cpu=7A53
+arch=trento
+gpu=mi250
+build=cce
+echo "System: \$system, Arch: \$arch, CPU: \$cpu, GPU: \$gpu"
+echo "Ranks: \$ranks, PPN: \$ppn, Nodes: \$nodes, Threads: \$threads, SMT: \$smt, GPN: \$gpn"
+echo "Build: \$build"
+echo "Job ID: \$SLURM_JOB_ID"
+echo "Running on: \$SLURM_JOB_NODELIST"
+
+# Stack limits
+ulimit -c unlimited
+ulimit -s unlimited
+export OMP_NUM_THREADS="\$threads"
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Gromacs envars
+module load .archive/CCE-GPU-3.0.0
+module load gromacs/2023_amd-mpi-omp-plumed-python3
+
+
+export GMX_ENABLE_DIRECT_GPU_COMM=yes
+export GMX_DISABLE_ALTERNATING_GPU_WAIT=yes
+export GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM=yes
+#
+##
+export GMX_GPU_DD_COMMS=1
+export GMX_GPU_PME_PP_COMMS=1
+export GMX_NO_QUOTES=1
+
+export OMP_NUM_THREADS=\$threads
+export SLURM_CPU_BIND_TYPE=rank
+export CRAY_ACC_DEBUG=3
+env OMP_NUM_THREADS=\$threads
+#############################
+export GMX_FORCE_GPU_AWARE_MPI=yes
+export MPICH_OFI_NIC_POLICY=GPU
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+export GMX_DISABLE_GPU_TIMING=1
+export GMX_FORCE_UPDATE_DEFAULT_GPU=1
+#############################
+
+INPUT_MDP=steered.mdp            #### MUST BE PROVIDED                                                                     
+FILE_GRO=md_eq7.gro              #### MUST BE PROVIDED                                                                     
+FILE_TPR=steered.tpr             #### BE CREATED                                                                           
+STEERED=steered                  #### BE CREATED / OUTPUT FILE                                                             
+INPUT_PLUMED=plumed_steered.dat  #### MUST BE PROVIDED  
+
+
+gmx_mpi grompp -f \$INPUT_MDP -c \$FILE_GRO -p ../../../../top/topol.top -o \$FILE_TPR  -n index -maxwarn 1
+
+srun -K1 --mpi=cray_shasta  -N \$nodes -n \$ranks -c \$threads  --accel-bind verbose  --cpu-bind cores   -m block:block gmx_mpi mdrun -s \$FILE_TPR -v -deffnm \$STEERED -plumed \$INPUT_PLUMED -ntomp \$threads -pin on -nb gpu -bonded gpu -update cpu  -maxh 23
+
+
+ABC
+
+
+cat > us.sub <<EOF
+#!/bin/bash
+#SBATCH --account=ibc7585
+#SBATCH --job-name=US1M7
+#SBATCH --constraint=MI250
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=8
+#SBATCH --gpus-per-node=1
+#SBATCH --hint=nomultithread
+#SBATCH --output=cines-%J.out
+#SBATCH --error=cines-%J.err
+#SBATCH --time=24:00:00
+
+
+module purge
+
+nodes="\${SLURM_JOB_NUM_NODES}"
+ppn="\${SLURM_NTASKS_PER_NODE}"
+threads="\${BM_THREADS:-\$SLURM_CPUS_PER_TASK}"
+smt=1
+#ranks=\$(( nodes * ppn ))
+ranks="\${SLURM_NTASKS}"
+
+system=adastra
+cpu=7A53
+arch=trento
+gpu=mi250
+build=cce
+echo "System: \$system, Arch: \$arch, CPU: \$cpu, GPU: \$gpu"
+echo "Ranks: \$ranks, PPN: \$ppn, Nodes: \$nodes, Threads: \$threads, SMT:
+\$smt, GPN: \$gpn"
+echo "Build: \$build"
+echo "Job ID: \$SLURM_JOB_ID"
+echo "Running on: \$SLURM_JOB_NODELIST"
+
+# Stack limits
+ulimit -c unlimited
+ulimit -s unlimited
+export OMP_NUM_THREADS="\$threads"
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+
+# Gromacs envars
+module load  .archive/CCE-GPU-3.0.0
+module load gromacs/2023_amd-mpi-omp-plumed-python3
+
+
+export GMX_ENABLE_DIRECT_GPU_COMM=yes
+export GMX_DISABLE_ALTERNATING_GPU_WAIT=yes
+export GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM=yes
+#
+##
+export GMX_GPU_DD_COMMS=1
+export GMX_GPU_PME_PP_COMMS=1
+export GMX_NO_QUOTES=1
+
+export OMP_NUM_THREADS=\$threads
+export SLURM_CPU_BIND_TYPE=rank
+export CRAY_ACC_DEBUG=3
+env OMP_NUM_THREADS=\$threads
+#############################
+export GMX_FORCE_GPU_AWARE_MPI=yes
+export MPICH_OFI_NIC_POLICY=GPU
+export OMP_PLACES=cores
+export OMP_PROC_BIND=close
+export GMX_DISABLE_GPU_TIMING=1
+export GMX_FORCE_UPDATE_DEFAULT_GPU=1
+#############################
+
+filetpr=us.tpr
+file=us.1
+
+##srun -K1 --mpi=cray_shasta  -N \$nodes -n \$ranks -c \$threads  --accel-bind verbose  --cpu-bind cores   -m block:block gmx_mpi mdrun  -s \$file.tpr -v -deffnm \$file -plumed plumed.dat -ntomp \$threads -pin on -nb gpu -bonded gpu -update cpu -pme gpu -maxh 23 -npme 1
+
+gmx_mpi grompp -f us.mdp -c steered.gro -p ../../../../top/topol.top -o us.tpr -n index -maxwarn 1
+
+srun -K1 --mpi=cray_shasta  -N \$nodes -n \$ranks -c \$threads  --accel-bind verbose  --cpu-bind cores -m block:block gmx_mpi mdrun  -s \$filetpr -v -deffnm \$file -plumed plumed_us.dat -ntomp \$threads -pin on -nb gpu -bonded gpu -update cpu  -maxh 23 
+EOF
+
+
+          cp -v ../../../md_eq7.gro .
+	        cp -v ../../../index.ndx .
+          # putting us in the script, could be removed easily
+         # cp -v ../../us.sub .
+          echo "OK"
+	  cd ..
+	  cd ..
+          done
+
+done
+

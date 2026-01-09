@@ -1,8 +1,10 @@
-## Requied files for preparing the simulation:
+# Necessary information and input files to run plain MD
+
+### Requied files for preparing the simulation:
 1. amber14sb_OL15.ff (Force Field folder)
 2. min.mdp (Minimzation input file for step 9)
 
-**top** directory: we prepare the gromacs input files (gro,top, etc.) (Remmber to Always Log). 
+**top** directory: we prepare the gromacs input files (gro,top, etc.) (Remmber to Always Log).
 **mdp_single** : mdp files are gromacs settings for running MD.
 **md** : first replica of MD for the system.
 **rep_2** and **rep_3**: second and third replicas.
