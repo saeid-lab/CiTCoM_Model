@@ -14,10 +14,11 @@ Before starting, make sure you have the following softwares installed on your co
 
 ---
 ## List of directories
+0. Just a bunch of handy tools
 1. Prepare and run plain MD in Gromacs.
 2. Prepare and run Replica Exchange with Solute Scaling (REST2)
 3. Prepare and run Umbrella sampling
-
+4. A few tests regarding the ML approach
 
 
 ## Useful commands:

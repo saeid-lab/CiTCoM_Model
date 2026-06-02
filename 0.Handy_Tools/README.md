@@ -30,8 +30,26 @@ ls -v md-2*.xtc | tr '\n' ' '
 du -ch *.xtc | tail -n 1
 ```
 
+- Get the size of all .trr files in current directory:
+```
+find . -type f -name "*.trr" -print0 | xargs -0 du -ch | tail -n 1
+```
+
 - Attaching partial xtc files:
 ```
 module load  .archive/CCE-GPU-3.0.0 gromacs/2023_amd-mpi-omp-plumed-python3
 gmx_mpi trjcat -f md-2.1.part0001.xtc md-2.2.part0002.xtc md-2.3.part0003.xtc -o mm.xtc
 ```
+
+- Check number tpr file:
+```
+gmx_mpi dump -s run.tpr | less
+```
+
+- Extend MD simulation:
+```
+gmx_mpi convert-tpr -s run_0.tpr -nsteps 1000000000 -o run.tpr
+1000000000 is the final and total number of new run.tpr file. (doesn't append)
+```
+
+
