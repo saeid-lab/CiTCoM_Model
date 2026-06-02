@@ -2,7 +2,7 @@
 ---
 
 ## Introduction
- In this repository, you'll find necessary input files, examples, tutorials, etc. to prepare your input files and analyze the outputs.
+ In this repository, you'll find input files, examples, tutorials, etc. to prepare your input files and analyze the outputs. Basically, a summary of technical aspects of my postdoc work on 2025-2026.
  
 Before starting, make sure you have the following softwares installed on your computer:
 - [Gromacs 2023.5](https://manual.gromacs.org/)
